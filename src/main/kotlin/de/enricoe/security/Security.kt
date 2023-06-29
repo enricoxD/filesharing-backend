@@ -17,14 +17,14 @@ data class UserSession(val user: User)
 fun Application.configureSecurity() {
     Jwt.init(this)
     install(Sessions) {
-        val secretEncryptKey = hex(this@configureSecurity.environment.config.property("session.encryptKey").getString())
-        val secretSignKey = hex(this@configureSecurity.environment.config.property("session.signKey").getString())
+        //val secretEncryptKey = hex(this@configureSecurity.environment.config.property("session.encryptKey").getString())
+        //val secretSignKey = hex(this@configureSecurity.environment.config.property("session.signKey").getString())
 
         cookie<UserSession>("session") {
             serializer = KotlinxSessionSerializer(Json)
             cookie.maxAge = 30.days
             cookie.extensions["SameSite"] = "lax"
-            transform(SessionTransportTransformerEncrypt(secretEncryptKey, secretSignKey))
+            //transform(SessionTransportTransformerEncrypt(secretEncryptKey, secretSignKey))
         }
     }
 
