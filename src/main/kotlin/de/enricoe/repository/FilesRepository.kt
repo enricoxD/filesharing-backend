@@ -8,9 +8,7 @@ import de.enricoe.security.Crypto
 import de.enricoe.utils.FileHasher
 import de.enricoe.utils.Response
 import io.ktor.http.content.*
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.*
 import org.litote.kmongo.and
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
@@ -18,13 +16,35 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import kotlin.time.Duration.Companion.days
 
 object FilesRepository {
+
+    enum class DeleteIn {
+        ONE_DAY,
+        ONE_WEEK,
+        TWO_WEEKS,
+        ONE_MONTH,
+        THREE_MONTH;
+
+        fun toTimestamp(uploadTime: LocalDateTime): LocalDateTime {
+            return uploadTime.toInstant(TimeZone.currentSystemDefault()).plus(
+                when (this) {
+                    ONE_DAY -> 2.days
+                    ONE_WEEK -> 7.days
+                    TWO_WEEKS -> 14.days
+                    ONE_MONTH -> 30.days
+                    THREE_MONTH -> 90.days
+                }
+            ).toLocalDateTime(TimeZone.currentSystemDefault())
+        }
+    }
 
     suspend fun uploadFiles(author: String, multiPartData: MultiPartData): Response<Any> {
         val uploadTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         var title: String = ""
-        var password: String? = null
+        var password: String = ""
+        var deleteIn: DeleteIn = DeleteIn.valueOf("ONE_WEEK")
         val files = arrayListOf<FileUpload>()
 
         runCatching {
@@ -38,6 +58,7 @@ object FilesRepository {
                         when (name) {
                             "title" -> title = value.trim()
                             "password" -> password = Crypto.hashPassword(value)
+                            "deleteIn" -> deleteIn = DeleteIn.valueOf(value)
                         }
                     }
 
@@ -67,7 +88,7 @@ object FilesRepository {
                 part.dispose()
             }
         }.onSuccess {
-            val upload = Upload(author, title, password, uploadTime, files.toTypedArray())
+            val upload = Upload(author, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
             MongoManager.uploads.insertOne(upload)
             return Response.Success(upload, "$author/${upload.contentHash}")
         }.onFailure {
