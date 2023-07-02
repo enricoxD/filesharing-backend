@@ -87,9 +87,10 @@ object FilesRepository {
                 }
                 part.dispose()
             }
-        }.onSuccess {
+
             val upload = Upload(author, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
             MongoManager.uploads.insertOne(upload)
+            println("$author/${upload.contentHash}")
             return Response.Success(upload, "$author/${upload.contentHash}")
         }.onFailure {
             return Response.Error(message = "Upload failed")
