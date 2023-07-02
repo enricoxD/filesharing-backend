@@ -58,7 +58,7 @@ object FilesRepository {
                         when (name) {
                             "title" -> title = value.trim()
                             "password" -> password = Crypto.hashPassword(value)
-                            "deleteIn" -> deleteIn = DeleteIn.valueOf(value)
+                            //"deleteIn" -> deleteIn = DeleteIn.valueOf(value)
                         }
                     }
 
