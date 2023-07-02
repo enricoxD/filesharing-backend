@@ -72,14 +72,13 @@ object FilesRepository {
                         val hash = FileHasher.hash(ByteArrayInputStream(byteArray.clone()))
                         val directory = File("/uploads/$author/").also { if (!it.exists()) it.mkdirs() }
                         val targetFile = File(directory, hash)
-                        if (targetFile.exists()) {
-                            return@forEachPart
+                        if (!targetFile.exists()) {
+                            Files.copy(
+                                ByteArrayInputStream(byteArray.clone()),
+                                targetFile.toPath(),
+                                StandardCopyOption.REPLACE_EXISTING
+                            )
                         }
-                        Files.copy(
-                            ByteArrayInputStream(byteArray.clone()),
-                            targetFile.toPath(),
-                            StandardCopyOption.REPLACE_EXISTING
-                        )
                         files.add(FileUpload(fileName, hash))
                     }
 
