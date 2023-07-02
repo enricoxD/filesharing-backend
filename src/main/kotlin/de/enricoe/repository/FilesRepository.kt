@@ -44,7 +44,7 @@ object FilesRepository {
         val uploadTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         var title: String = ""
         var password: String = ""
-        var deleteIn: DeleteIn = DeleteIn.valueOf("ONE_WEEK")
+        var deleteIn: DeleteIn = DeleteIn.ONE_MONTH
         val files = arrayListOf<FileUpload>()
 
         runCatching {
