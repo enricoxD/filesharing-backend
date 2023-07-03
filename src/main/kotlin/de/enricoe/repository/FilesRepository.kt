@@ -100,13 +100,14 @@ object FilesRepository {
     suspend fun getUpload(user: User?, password: String?, author: String, hash: String): Response<Any> {
         val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::contentHash eq hash))
             ?: return Response.Error(message = "Requested Upload not found")
+       /* TODO
         if (user?.id != upload.author) {
             val uploadPw = upload.password
-            if (uploadPw != null) {
+            if (uploadPw != null && uploadPw.trim().isNotBlank()) {
                 if (password == null || !Crypto.verifyPassword(password, uploadPw).verified)
                     return Response.Error(message = "Invalid password")
             }
-        }
+        }*/
         return Response.Success(upload)
     }
 }
