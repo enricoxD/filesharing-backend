@@ -23,7 +23,7 @@ fun Application.authRoutes() {
                 if (result is Response.Success && result.data is User) {
                     call.sessions.set(UserSession(result.data))
                 }
-                call.respond(result.statusCode, result)
+                call.respond(result.statusCode)
             }
 
             post("login") {
@@ -32,7 +32,7 @@ fun Application.authRoutes() {
                 if (result is Response.Success && result.data is User) {
                     call.sessions.set(UserSession(result.data))
                 }
-                call.respond(result.statusCode, result)
+                call.respond(result.statusCode)
             }
 
             get("logout") {
