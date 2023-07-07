@@ -1,5 +1,7 @@
 package de.enricoe.models
 
+import de.enricoe.api.responses.ForeignUserResponse
+import de.enricoe.api.responses.UserResponse
 import de.enricoe.database.MongoManager
 import de.enricoe.security.Crypto
 import kotlinx.datetime.Clock
@@ -70,6 +72,10 @@ data class User(
             return id
         }
     }
+
+    fun asResponse() = UserResponse(id, username, email, createdAt, lastSeen, avatar, authToken, emailVerified)
+    fun asForeignResponse() = ForeignUserResponse(id, username, createdAt, lastSeen, avatar)
+
 }
 
 @Serializable

@@ -1,5 +1,6 @@
 package de.enricoe.routes
 
+import de.enricoe.api.requests.GetUploadRequest
 import de.enricoe.repository.FilesRepository
 import de.enricoe.security.UserSession
 import io.ktor.http.*
@@ -19,14 +20,13 @@ fun Application.filesRoutes() {
                 call.respond(result.statusCode, result)
             }
 
-            get("{author}/{hash}") {
+            post("getUpload") {
                 runCatching {
                     val user = call.sessions.get<UserSession>()?.user
-                    val author = call.parameters["author"]!!
-                    val hash = call.parameters["hash"]!!
-                    val result = FilesRepository.getUpload(user, null, author, hash)
+                    val request = call.receive<GetUploadRequest>()
+                    val result = FilesRepository.getUpload(user, request.author, request.id, request.password)
                     call.respond(result.statusCode, result)
-                    return@get
+                    return@post
                 }.onFailure {
                     call.respond(HttpStatusCode.BadRequest)
                 }

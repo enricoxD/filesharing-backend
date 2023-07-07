@@ -7,6 +7,7 @@ import de.enricoe.models.User
 import de.enricoe.security.Crypto
 import de.enricoe.utils.FileHasher
 import de.enricoe.utils.Response
+import io.ktor.http.*
 import io.ktor.http.content.*
 import kotlinx.datetime.*
 import org.litote.kmongo.and
@@ -89,25 +90,24 @@ object FilesRepository {
 
             val upload = Upload(author, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
             MongoManager.uploads.insertOne(upload)
-            println("$author/${upload.contentHash}")
-            return Response.Success(upload, "$author/${upload.contentHash}")
+            println("$author/${upload.id}")
+            return Response.Success(upload.asResponse(), "$author/${upload.id}")
         }.onFailure {
             return Response.Error(message = "Upload failed")
         }
         return Response.Error(message = "?")
     }
 
-    suspend fun getUpload(user: User?, password: String?, author: String, hash: String): Response<Any> {
-        val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::contentHash eq hash))
-            ?: return Response.Error(message = "Requested Upload not found")
-       /* TODO
-        if (user?.id != upload.author) {
-            val uploadPw = upload.password
-            if (uploadPw != null && uploadPw.trim().isNotBlank()) {
-                if (password == null || !Crypto.verifyPassword(password, uploadPw).verified)
-                    return Response.Error(message = "Invalid password")
+    suspend fun getUpload(user: User?, author: String, id: String, password: String?): Response<Any> {
+        val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
+                ?: return Response.Error(HttpStatusCode.NotFound, message = "Requested Upload not found")
+
+        val uploadPassword = upload.password
+        if (user?.id != upload.author && uploadPassword != null && uploadPassword.trim().isNotBlank()) {
+            if (password == null || !Crypto.verifyPassword(password, uploadPassword).verified) {
+                return Response.Error(message = "Invalid password")
             }
-        }*/
-        return Response.Success(upload)
+        }
+        return Response.Success(upload.asResponse())
     }
 }

@@ -1,6 +1,8 @@
 package de.enricoe.models
 
+import de.enricoe.api.responses.UploadResponse
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,7 +14,8 @@ class Upload(
     var files: Array<FileUpload>,
     var deletedAt: LocalDateTime? = null,
 ) {
-    val contentHash = buildString {
+    @SerialName("_id")
+    val id = buildString {
         append(uploadedAt.year)
         append(uploadedAt.monthNumber.toString().padStart(2, '0'))
         append(uploadedAt.dayOfMonth.toString().padStart(2, '0'))
@@ -21,6 +24,8 @@ class Upload(
         append(seconds.toString().padStart(5, '0'))
         append(files.contentHashCode())
     }
+
+    fun asResponse() = UploadResponse(id, author, title, uploadedAt, files)
 }
 
 @Serializable
