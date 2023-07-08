@@ -65,7 +65,7 @@ object FilesRepository {
 
                     is PartData.FileItem -> {
                         // Handle uploaded file
-                        val fileName = part.originalFileName ?: "unknown"
+                        val name = part.originalFileName ?: "unknown"
                         val stream = part.streamProvider()
                         val byteArray = stream.readBytes()
                         stream.close()
@@ -80,7 +80,8 @@ object FilesRepository {
                                 StandardCopyOption.REPLACE_EXISTING
                             )
                         }
-                        files.add(FileUpload(fileName, hash))
+                        val size = targetFile.length()
+                        files.add(FileUpload(name, hash, size))
                     }
 
                     else -> {}

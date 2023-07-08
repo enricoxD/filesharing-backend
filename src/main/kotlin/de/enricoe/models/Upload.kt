@@ -12,7 +12,7 @@ class Upload(
     var password: String?,
     val uploadedAt: LocalDateTime,
     var files: Array<FileUpload>,
-    var deletedAt: LocalDateTime? = null,
+    var deleteAt: LocalDateTime? = null,
 ) {
     @SerialName("_id")
     val id = buildString {
@@ -30,6 +30,7 @@ class Upload(
 
 @Serializable
 class FileUpload(
-    val fileName: String,
-    val hash: String
+    val name: String,
+    val hash: String,
+    val size: Long
 )
