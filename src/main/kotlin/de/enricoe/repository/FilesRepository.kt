@@ -105,7 +105,7 @@ object FilesRepository {
         val uploadPassword = upload.password
         if (user?.id != upload.author && uploadPassword != null && uploadPassword.trim().isNotBlank()) {
             if (password == null || !Crypto.verifyPassword(password, uploadPassword).verified) {
-                return Response.Error(message = "Invalid password")
+                return Response.Error(HttpStatusCode.Unauthorized,  message = "Invalid password")
             }
         }
         return Response.Success(upload.asResponse())

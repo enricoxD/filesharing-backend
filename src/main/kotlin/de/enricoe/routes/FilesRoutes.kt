@@ -20,7 +20,7 @@ fun Application.filesRoutes() {
                 call.respond(result.statusCode, result)
             }
 
-            post("getUpload") {
+            post("getupload") {
                 runCatching {
                     val user = call.sessions.get<UserSession>()?.user
                     val request = call.receive<GetUploadRequest>()
