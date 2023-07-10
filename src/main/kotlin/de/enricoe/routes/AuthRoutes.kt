@@ -43,20 +43,6 @@ fun Application.authRoutes() {
                 call.sessions.clear("session")
                 call.respond(HttpStatusCode.OK)
             }
-
-            authenticate {
-                get("validateToken") {
-                    call.respond(HttpStatusCode.OK)
-                }
-            }
-        }
-
-        get("user") {
-            val session = call.sessions.get<UserSession>() ?: run {
-                call.respondText("Not logged in")
-                return@get
-            }
-            call.respondText(session.user.username)
         }
     }
 }
