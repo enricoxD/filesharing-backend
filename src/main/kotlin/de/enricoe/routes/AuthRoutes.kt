@@ -22,6 +22,8 @@ fun Application.authRoutes() {
                 val result = UserRepository.register(credentials)
                 if (result is Response.Success && result.data is User) {
                     call.sessions.set(UserSession(result.data))
+                    call.respond(result.statusCode, result.data)
+                    return@post
                 }
                 call.respond(result.statusCode)
             }
@@ -31,6 +33,8 @@ fun Application.authRoutes() {
                 val result = UserRepository.login(credentials)
                 if (result is Response.Success && result.data is User) {
                     call.sessions.set(UserSession(result.data))
+                    call.respond(result.statusCode, result.data)
+                    return@post
                 }
                 call.respond(result.statusCode)
             }
