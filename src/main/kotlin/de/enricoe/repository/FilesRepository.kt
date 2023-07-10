@@ -1,5 +1,6 @@
 package de.enricoe.repository
 
+import de.enricoe.api.responses.AuthorInformationResponse
 import de.enricoe.database.MongoManager
 import de.enricoe.models.FileUpload
 import de.enricoe.models.Upload
@@ -9,17 +10,24 @@ import de.enricoe.utils.FileHasher
 import de.enricoe.utils.Response
 import io.ktor.http.*
 import io.ktor.http.content.*
+import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import org.litote.kmongo.and
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 
 object FilesRepository {
+    val deleteZipJobs = hashMapOf<String, Job>()
 
     enum class DeleteIn {
         ONE_DAY,
@@ -43,9 +51,9 @@ object FilesRepository {
 
     suspend fun uploadFiles(author: String, multiPartData: MultiPartData): Response<Any> {
         val uploadTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        var title: String = ""
-        var password: String = ""
-        var deleteIn: DeleteIn = DeleteIn.ONE_MONTH
+        var title = ""
+        var password = ""
+        var deleteIn = DeleteIn.ONE_MONTH
         val files = arrayListOf<FileUpload>()
 
         runCatching {
@@ -100,6 +108,85 @@ object FilesRepository {
     }
 
     suspend fun getUpload(user: User?, author: String, id: String, password: String?): Response<Any> {
+        val permissionResult = checkPermission(user, author, id, password)
+        if (permissionResult is Response.Error) return permissionResult
+        if (permissionResult is Response.Success) {
+            return Response.Success((permissionResult.data as Upload).asResponse())
+        }
+        return Response.Error()
+    }
+
+    suspend fun requestFileDownload(user: User?, author: String, id: String, fileUpload: FileUpload, password: String?): Response<Any> {
+        val permissionResult = checkPermission(user, author, id, password)
+        if (permissionResult is Response.Error) return permissionResult
+        if (permissionResult is Response.Success) {
+            val upload = permissionResult.data as Upload
+
+            if (upload.files.none { it.hash == fileUpload.hash } ) {
+                return Response.Error(HttpStatusCode.NotFound, message = "Requested Upload not found (hash)")
+            }
+
+            return Response.Success(File("/uploads/${author}/${fileUpload.hash}"))
+        }
+        return Response.Error()
+    }
+
+    suspend fun requestDownloadAll(user: User?, author: String, id: String, password: String?): Response<Any> {
+        val permissionResult = checkPermission(user, author, id, password)
+        if (permissionResult is Response.Error) return permissionResult
+        if (permissionResult is Response.Success) {
+            val upload = permissionResult.data as Upload
+
+            val path = "/uploads/${author}/temp/${id}.zip"
+            deleteZipJobs[path]?.cancel()
+
+            val outputFile = File(path)
+            deleteZipJobs[path] = CoroutineScope(Dispatchers.IO).launch {
+                delay(15.minutes)
+                if (outputFile.exists()) {
+                    outputFile.parentFile.deleteRecursively()
+                }
+            }
+
+            fun buildZipFile() {
+                if (!outputFile.exists()) {
+                    outputFile.parentFile.mkdirs()
+                    outputFile.createNewFile()
+                    outputFile.deleteOnExit()
+                }
+
+                val outputStream = FileOutputStream(outputFile)
+                val zipOutput = ZipOutputStream(outputStream)
+
+                for (fileUpload in upload.files) {
+                    val file = File("/uploads/$author/${fileUpload.hash}")
+                    val entry = ZipEntry(fileUpload.name)
+                    zipOutput.putNextEntry(entry)
+                    zipOutput.write(file.readBytes())
+                    zipOutput.closeEntry()
+                }
+                zipOutput.close()
+                outputStream.close()
+            }
+
+            buildZipFile()
+            return Response.Success(outputFile)
+        }
+        return Response.Error()
+    }
+
+    suspend fun requestAuthorInformation(user: User?, author: String, id: String, password: String?): Response<Any> {
+        val permissionResult = checkPermission(user, author, id, password)
+        if (permissionResult is Response.Error) return permissionResult
+        if (author == "Unknown") {
+            return Response.Success(AuthorInformationResponse("Unknown", null))
+        }
+        val authorUser = MongoManager.users.findOne { User::id eq author }
+                ?: return Response.Success(AuthorInformationResponse("Unknown", null))
+        return Response.Success(AuthorInformationResponse(authorUser.username, authorUser.lastSeen))
+    }
+
+    fun checkPermission(user: User?, author: String, id: String, password: String?): Response<Any> {
         val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
                 ?: return Response.Error(HttpStatusCode.NotFound, message = "Requested Upload not found")
 
@@ -109,6 +196,6 @@ object FilesRepository {
                 return Response.Error(HttpStatusCode.Unauthorized,  message = "Invalid password")
             }
         }
-        return Response.Success(upload.asResponse())
+        return Response.Success(upload)
     }
 }
