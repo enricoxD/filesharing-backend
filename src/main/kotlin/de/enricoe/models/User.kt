@@ -14,6 +14,10 @@ import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 import java.nio.file.Path
 
+enum class Role {
+    ADMIN, STAFF, PREMIUM, NORMAL
+}
+
 @Serializable
 data class User(
     @SerialName("_id") val id: String,
@@ -22,9 +26,9 @@ data class User(
     var password: String,
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
-    var avatar: Path? = null,
     var emailVerified: Boolean = false,
-    var apiKey: String? = null
+    var apiKey: String? = null,
+    var role: Role = Role.NORMAL
 ) {
 
     companion object {
@@ -72,8 +76,8 @@ data class User(
         }
     }
 
-    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, avatar, emailVerified)
-    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, avatar)
+    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, emailVerified, role)
+    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, role)
 
 }
 

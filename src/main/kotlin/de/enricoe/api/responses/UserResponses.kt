@@ -1,5 +1,6 @@
 package de.enricoe.api.responses
 
+import de.enricoe.models.Role
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import java.nio.file.Path
@@ -11,8 +12,8 @@ data class UserResponse(
     var email: String,
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
-    var avatar: Path? = null,
     var emailVerified: Boolean = false,
+    var role: Role
 )
 
 @Serializable
@@ -21,5 +22,5 @@ data class ForeignUserResponse(
     var username: String,
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
-    var avatar: Path? = null,
+    var role: Role
 )

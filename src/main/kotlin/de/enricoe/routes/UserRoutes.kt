@@ -92,7 +92,7 @@ fun Routing.userRoutes() {
                 return@get
             }
             val user = User.getById(userId)
-            call.respond(Response.Success(user))
+            call.respond(Response.Success(user?.asResponse()))
         }
     }
 }
