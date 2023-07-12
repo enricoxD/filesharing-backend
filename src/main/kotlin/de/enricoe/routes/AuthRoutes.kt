@@ -14,35 +14,43 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 
-fun Application.authRoutes() {
-    routing {
-        route("/auth") {
-            post("register") {
-                val credentials = call.receive<UserRegistrationCredentials>()
-                val result = UserRepository.register(credentials)
-                if (result is Response.Success && result.data is User) {
-                    call.sessions.set(UserSession(result.data))
-                    call.respond(result.statusCode, result.data)
-                    return@post
-                }
-                call.respond(result.statusCode)
+fun Routing.authRoutes() {
+    route("/auth") {
+        post("register") {
+            val credentials = call.receive<UserRegistrationCredentials>()
+            val result = UserRepository.register(call, credentials)
+            if (result is Response.Success && result.data is User) {
+                //call.sessions.set(UserSession(result.data))
+                call.respond(result.statusCode, result.data)
+                return@post
             }
+            if (result is Response.Error) {
+                call.respond(result.statusCode, result)
+                return@post
+            }
+            call.respond(result.statusCode)
+        }
 
-            post("login") {
-                val credentials = call.receive<UserPasswordCredential>()
-                val result = UserRepository.login(credentials)
-                if (result is Response.Success && result.data is User) {
-                    call.sessions.set(UserSession(result.data))
-                    call.respond(result.statusCode, result.data)
-                    return@post
-                }
-                call.respond(result.statusCode)
+        post("login") {
+            val credentials = call.receive<UserPasswordCredential>()
+            val result = UserRepository.login(call, credentials)
+            if (result is Response.Success && result.data is User) {
+                //call.sessions.set(UserSession(result.data))
+                call.respond(result.statusCode, result.data)
+                return@post
             }
+            if (result is Response.Error) {
+                call.respond(result.statusCode, result)
+                return@post
+            }
+            call.respond(result.statusCode)
+        }
 
-            get("logout") {
-                call.sessions.clear("session")
-                call.respond(HttpStatusCode.OK)
-            }
+        get("logout") {
+            call.sessions.clear("session")
+            call.response.cookies.append(Cookie("headerPayload", "", maxAge = 0, secure = true, httpOnly = false, path = "/"))
+            call.response.cookies.append(Cookie("signature", "", maxAge = 0, secure = true, httpOnly = false, path = "/"))
+            call.respond(HttpStatusCode.OK)
         }
     }
 }

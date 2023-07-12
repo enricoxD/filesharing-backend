@@ -17,13 +17,12 @@ import java.nio.file.Path
 @Serializable
 data class User(
     @SerialName("_id") val id: String,
-    var username: String,
+    var name: String,
     var email: String,
     var password: String,
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
     var avatar: Path? = null,
-    var authToken: String? = null,
     var emailVerified: Boolean = false,
     var apiKey: String? = null
 ) {
@@ -55,7 +54,7 @@ data class User(
         }
 
         suspend fun getByUsername(username: String): User? {
-            return MongoManager.users.findOne(User::username eq username)
+            return MongoManager.users.findOne(User::name eq username)
         }
 
 
@@ -73,8 +72,8 @@ data class User(
         }
     }
 
-    fun asResponse() = UserResponse(id, username, email, createdAt, lastSeen, avatar, authToken, emailVerified)
-    fun asForeignResponse() = ForeignUserResponse(id, username, createdAt, lastSeen, avatar)
+    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, avatar, emailVerified)
+    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, avatar)
 
 }
 

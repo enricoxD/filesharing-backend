@@ -3,6 +3,7 @@ package de.enricoe.security
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
+import io.ktor.http.*
 import io.ktor.server.application.*
 import java.util.*
 
@@ -36,4 +37,13 @@ object Jwt {
         .withExpiresAt(Date(System.currentTimeMillis() + validityInMs))
         .sign(algorithm)
 
+    fun appendCookies(call: ApplicationCall, token: String?) {
+        if (token == null) return
+        val parts = token.split(".")
+        val headerPayload = "${parts[0]}.${parts[1]}"
+        val signature = parts[2]
+
+        call.response.cookies.append(Cookie("headerPayload", headerPayload, secure = true, httpOnly = false, path = "/"))
+        call.response.cookies.append(Cookie("signature", signature, secure = true, httpOnly = false, path = "/"))
+    }
 }

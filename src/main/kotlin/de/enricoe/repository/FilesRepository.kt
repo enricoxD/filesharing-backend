@@ -16,7 +16,6 @@ import org.litote.kmongo.and
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
@@ -49,7 +48,7 @@ object FilesRepository {
         }
     }
 
-    suspend fun uploadFiles(author: String, multiPartData: MultiPartData): Response<Any> {
+    suspend fun uploadFiles(userId: String, multiPartData: MultiPartData): Response<Any> {
         val uploadTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         var title = ""
         var password = ""
@@ -79,7 +78,7 @@ object FilesRepository {
                         stream.close()
 
                         val hash = FileHasher.hash(ByteArrayInputStream(byteArray.clone()))
-                        val directory = File("/uploads/$author/").also { if (!it.exists()) it.mkdirs() }
+                        val directory = File("/uploads/$userId/").also { if (!it.exists()) it.mkdirs() }
                         val targetFile = File(directory, hash)
                         if (!targetFile.exists()) {
                             Files.copy(
@@ -97,18 +96,18 @@ object FilesRepository {
                 part.dispose()
             }
 
-            val upload = Upload(author, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
+            val upload = Upload(userId, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
             MongoManager.uploads.insertOne(upload)
-            println("$author/${upload.id}")
-            return Response.Success(upload.asResponse(), "$author/${upload.id}")
+            println("$userId/${upload.id}")
+            return Response.Success(upload.asResponse(), "$userId/${upload.id}")
         }.onFailure {
             return Response.Error(message = "Upload failed")
         }
         return Response.Error(message = "?")
     }
 
-    suspend fun getUpload(user: User?, author: String, id: String, password: String?): Response<Any> {
-        val permissionResult = checkPermission(user, author, id, password)
+    suspend fun getUpload(userId: String?, author: String, id: String, password: String?): Response<Any> {
+        val permissionResult = checkPermission(userId, author, id, password)
         if (permissionResult is Response.Error) return permissionResult
         if (permissionResult is Response.Success) {
             return Response.Success((permissionResult.data as Upload).asResponse())
@@ -116,8 +115,8 @@ object FilesRepository {
         return Response.Error()
     }
 
-    suspend fun requestFileDownload(user: User?, author: String, id: String, fileUpload: FileUpload, password: String?): Response<Any> {
-        val permissionResult = checkPermission(user, author, id, password)
+    suspend fun requestFileDownload(userId: String?, author: String, id: String, fileUpload: FileUpload, password: String?): Response<Any> {
+        val permissionResult = checkPermission(userId, author, id, password)
         if (permissionResult is Response.Error) return permissionResult
         if (permissionResult is Response.Success) {
             val upload = permissionResult.data as Upload
@@ -131,8 +130,8 @@ object FilesRepository {
         return Response.Error()
     }
 
-    suspend fun requestDownloadAll(user: User?, author: String, id: String, password: String?): Response<Any> {
-        val permissionResult = checkPermission(user, author, id, password)
+    suspend fun requestDownloadAll(userId: String?, author: String, id: String, password: String?): Response<Any> {
+        val permissionResult = checkPermission(userId, author, id, password)
         if (permissionResult is Response.Error) return permissionResult
         if (permissionResult is Response.Success) {
             val upload = permissionResult.data as Upload
@@ -175,23 +174,23 @@ object FilesRepository {
         return Response.Error()
     }
 
-    suspend fun requestAuthorInformation(user: User?, author: String, id: String, password: String?): Response<Any> {
-        val permissionResult = checkPermission(user, author, id, password)
+    suspend fun requestAuthorInformation(userId: String?, author: String, id: String, password: String?): Response<Any> {
+        val permissionResult = checkPermission(userId, author, id, password)
         if (permissionResult is Response.Error) return permissionResult
         if (author == "Unknown") {
             return Response.Success(AuthorInformationResponse("Unknown", null))
         }
         val authorUser = MongoManager.users.findOne { User::id eq author }
                 ?: return Response.Success(AuthorInformationResponse("Unknown", null))
-        return Response.Success(AuthorInformationResponse(authorUser.username, authorUser.lastSeen))
+        return Response.Success(AuthorInformationResponse(authorUser.name, authorUser.lastSeen))
     }
 
-    fun checkPermission(user: User?, author: String, id: String, password: String?): Response<Any> {
+    fun checkPermission(userId: String?, author: String, id: String, password: String?): Response<Any> {
         val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
                 ?: return Response.Error(HttpStatusCode.NotFound, message = "Requested Upload not found")
 
         val uploadPassword = upload.password
-        if (user?.id != upload.author && uploadPassword != null && uploadPassword.trim().isNotBlank()) {
+        if (userId != upload.author && uploadPassword != null && uploadPassword.trim().isNotBlank()) {
             if (password == null || !Crypto.verifyPassword(password, uploadPassword).verified) {
                 return Response.Error(HttpStatusCode.Unauthorized,  message = "Invalid password")
             }

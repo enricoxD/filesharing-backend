@@ -32,7 +32,12 @@ fun Application.configureSecurity() {
         jwt {
             verifier(Jwt.verifier)
             validate {
-                val claim = it.payload.getClaim(Jwt.CLAIM).asString()
+                val headerPayload = request.cookies["headerPayload"] ?: return@validate null
+                val signature = request.cookies["signature"] ?: return@validate null
+                val tokenRepresentation = "$headerPayload.$signature"
+                val token = Jwt.verifier.verify(tokenRepresentation)
+
+                val claim = token.getClaim(Jwt.CLAIM).asString()
                 if (claim != null) {
                     UserIdPrincipal(claim)
                 } else {

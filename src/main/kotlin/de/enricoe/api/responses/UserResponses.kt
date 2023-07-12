@@ -12,7 +12,6 @@ data class UserResponse(
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
     var avatar: Path? = null,
-    var authToken: String? = null,
     var emailVerified: Boolean = false,
 )
 

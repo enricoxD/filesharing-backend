@@ -6,13 +6,14 @@ import de.enricoe.models.UserRegistrationCredentials
 import de.enricoe.security.Crypto
 import de.enricoe.security.Jwt
 import de.enricoe.utils.Response
+import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import org.litote.kmongo.eq
 import org.litote.kmongo.updateOne
 
 object UserRepository {
 
-    suspend fun register(credentials: UserRegistrationCredentials): Response<Any> {
+    suspend fun register(call: ApplicationCall, credentials: UserRegistrationCredentials): Response<Any> {
         if (isEmailInUse(credentials.email)) return Response.Error(message = "Email already in use")
         if (isUsernameInUse(credentials.username)) return Response.Error(message = "Username already in use")
         /* TODO
@@ -21,21 +22,21 @@ object UserRepository {
             return Response.Error(exception = passwordValidation, message = "Password missmatch")
         }*/
         val user = User.register(credentials)
-        user.authToken = Jwt.makeToken(user.id)
+        Jwt.appendCookies(call, Jwt.makeToken(user.id))
         return Response.Success(data = user, "Successfully created user '${credentials.username}'")
     }
 
-    suspend fun login(credentials: UserPasswordCredential): Response<Any> {
+    suspend fun login(call: ApplicationCall, credentials: UserPasswordCredential): Response<Any> {
         val user = User.getByUsername(credentials.name) ?: User.getByEmail(credentials.name) ?: return Response.Error(message = "Username or Password does not exist")
         val cryptoResult = Crypto.verifyPassword(credentials.password, user.password)
         if (!cryptoResult.verified) return Response.Error(message = "Username or Password does not exist")
-        user.authToken = Jwt.makeToken(user.id)
+        Jwt.appendCookies(call, Jwt.makeToken(user.id))
         return Response.Success(data = user, "Successfully logged in")
     }
 
     suspend fun updateUsername(user: User, newUsername: String): Response<Any> {
         if (User.getByUsername(newUsername) != null) return Response.Error(message = "Username already in use")
-        user.username = newUsername
+        user.name = newUsername
         MongoManager.users.updateOne(User::id eq user.id, user)
         return Response.Success(data = user, "Successfully changed name to '$newUsername'")
     }
