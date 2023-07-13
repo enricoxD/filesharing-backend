@@ -4,15 +4,16 @@ import io.ktor.http.*
 
 
 sealed class Response<T>(
-    val statusCode: HttpStatusCode = HttpStatusCode.OK
+    open val statusCode: HttpStatusCode = HttpStatusCode.OK
 ) {
     data class Success<T>(
         val data: T? = null,
         val message: String? = null
-    ): Response<T>()
+    ) : Response<T>()
 
     data class Error<T>(
+        override val statusCode: HttpStatusCode = HttpStatusCode.OK,
         val exception: T? = null,
         val message: String? = null
-    ): Response<T>()
+    ) : Response<T>()
 }

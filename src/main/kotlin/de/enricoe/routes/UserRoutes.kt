@@ -1,5 +1,6 @@
 package de.enricoe.routes
 
+import de.enricoe.api.requests.GetUserRequest
 import de.enricoe.models.User
 import de.enricoe.repository.UserRepository
 import de.enricoe.security.UserSession
@@ -88,7 +89,7 @@ fun Routing.userRoutes() {
         get("current-user") {
             val userId = call.principal<UserIdPrincipal>()?.name
             if (userId == null) {
-                call.respond(Response.Error(null, "You're not logged in"))
+                call.respond(Response.Error<Nothing>(message = "You're not logged in"))
                 return@get
             }
             val user = User.getById(userId)
