@@ -5,6 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AuthorInformationResponse(
-        val username: String,
+        val name: String,
         val lastSeen: LocalDateTime?
 )

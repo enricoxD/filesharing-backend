@@ -8,7 +8,7 @@ import java.nio.file.Path
 @Serializable
 data class UserResponse(
     val id: String,
-    var username: String,
+    var name: String,
     var email: String,
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
@@ -19,7 +19,7 @@ data class UserResponse(
 @Serializable
 data class ForeignUserResponse(
     val id: String,
-    var username: String,
+    var name: String,
     val createdAt: LocalDateTime,
     var lastSeen: LocalDateTime,
     var role: Role
