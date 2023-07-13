@@ -12,7 +12,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
-import java.nio.file.Path
 
 enum class Role {
     ADMIN, STAFF, PREMIUM, NORMAL
@@ -28,14 +27,13 @@ data class User(
     var lastSeen: LocalDateTime,
     var emailVerified: Boolean = false,
     var apiKey: String? = null,
-    var role: Role = Role.NORMAL
+    var role: Role = Role.NORMAL,
+    var description: String = ""
 ) {
 
     companion object {
         suspend fun register(credentials: UserRegistrationCredentials): User {
-            println(1)
             val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-            println(2)
             val user = User(
                 id = getFreeId(),
                 credentials.username,
@@ -44,7 +42,6 @@ data class User(
                 createdAt = currentTime,
                 lastSeen = currentTime,
             )
-            println(3)
             MongoManager.users.insertOne(user)
             return user
         }
@@ -76,8 +73,8 @@ data class User(
         }
     }
 
-    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, emailVerified, role)
-    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, role)
+    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, emailVerified, role, description)
+    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, role, description)
 
 }
 

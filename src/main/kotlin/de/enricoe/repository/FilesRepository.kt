@@ -98,8 +98,7 @@ object FilesRepository {
 
             val upload = Upload(userId, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
             MongoManager.uploads.insertOne(upload)
-            println("$userId/${upload.id}")
-            return Response.Success(upload.asResponse(), "$userId/${upload.id}")
+            return Response.Success("$userId/${upload.id}")
         }.onFailure {
             return Response.Error(message = "Upload failed")
         }

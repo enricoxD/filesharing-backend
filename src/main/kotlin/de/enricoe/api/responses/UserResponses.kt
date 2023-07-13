@@ -8,19 +8,21 @@ import java.nio.file.Path
 @Serializable
 data class UserResponse(
     val id: String,
-    var name: String,
-    var email: String,
+    val name: String,
+    val email: String,
     val createdAt: LocalDateTime,
-    var lastSeen: LocalDateTime,
-    var emailVerified: Boolean = false,
-    var role: Role
+    val lastSeen: LocalDateTime,
+    val emailVerified: Boolean = false,
+    val role: Role,
+    val description: String
 )
 
 @Serializable
 data class ForeignUserResponse(
     val id: String,
-    var name: String,
+    val name: String,
     val createdAt: LocalDateTime,
-    var lastSeen: LocalDateTime,
-    var role: Role
+    val lastSeen: LocalDateTime,
+    val role: Role,
+    val description: String
 )
