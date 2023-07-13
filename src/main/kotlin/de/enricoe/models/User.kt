@@ -28,7 +28,6 @@ data class User(
     var emailVerified: Boolean = false,
     var apiKey: String? = null,
     var role: Role = Role.NORMAL,
-    var description: String = ""
 ) {
 
     companion object {
@@ -73,8 +72,8 @@ data class User(
         }
     }
 
-    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, emailVerified, role, description)
-    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, role, description)
+    fun asResponse() = UserResponse(id, name, email, createdAt, lastSeen, emailVerified, role)
+    fun asForeignResponse() = ForeignUserResponse(id, name, createdAt, lastSeen, role)
 
 }
 

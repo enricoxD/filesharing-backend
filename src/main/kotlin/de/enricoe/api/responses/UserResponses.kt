@@ -14,7 +14,6 @@ data class UserResponse(
     val lastSeen: LocalDateTime,
     val emailVerified: Boolean = false,
     val role: Role,
-    val description: String
 )
 
 @Serializable
@@ -24,5 +23,4 @@ data class ForeignUserResponse(
     val createdAt: LocalDateTime,
     val lastSeen: LocalDateTime,
     val role: Role,
-    val description: String
 )
