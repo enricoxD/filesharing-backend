@@ -61,7 +61,6 @@ object FilesRepository {
                     is PartData.FormItem -> {
                         val name = part.name
                         val value = part.value
-                        println("$name: $value")
 
                         when (name) {
                             "title" -> title = value.trim()
@@ -100,9 +99,9 @@ object FilesRepository {
             MongoManager.uploads.insertOne(upload)
             return Response.Success("$userId/${upload.id}")
         }.onFailure {
-            return Response.Error(message = "Upload failed")
+            return Response.Error(exception = "Upload failed")
         }
-        return Response.Error(message = "?")
+        return Response.Error(exception = "?")
     }
 
     suspend fun getUpload(userId: String?, author: String, id: String, password: String?): Response<Any> {
@@ -121,7 +120,7 @@ object FilesRepository {
             val upload = permissionResult.data as Upload
 
             if (upload.files.none { it.hash == fileUpload.hash } ) {
-                return Response.Error(HttpStatusCode.NotFound, message = "Requested Upload not found (hash)")
+                return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found (hash)")
             }
 
             return Response.Success(File("/uploads/${author}/${fileUpload.hash}"))
@@ -186,12 +185,12 @@ object FilesRepository {
 
     fun checkPermission(userId: String?, author: String, id: String, password: String?): Response<Any> {
         val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
-                ?: return Response.Error(HttpStatusCode.NotFound, message = "Requested Upload not found")
+                ?: return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found")
 
         val uploadPassword = upload.password
         if (userId != upload.author && uploadPassword != null && uploadPassword.trim().isNotBlank()) {
             if (password == null || !Crypto.verifyPassword(password, uploadPassword).verified) {
-                return Response.Error(HttpStatusCode.Unauthorized,  message = "Invalid password")
+                return Response.Error(HttpStatusCode.Unauthorized,  "Invalid password")
             }
         }
         return Response.Success(upload)
