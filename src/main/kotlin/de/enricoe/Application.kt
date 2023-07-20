@@ -51,7 +51,7 @@ fun Application.module() {
                     val token = Jwt.verifier.verify("$headerPayload.$signature")
                     id = token.getClaim(Jwt.CLAIM).asString()
                     call.authentication.principal(UserIdPrincipal(id))
-                } catch (_: TokenExpiredException) {}
+                } catch (_: Exception) {}
 
             }
         }
