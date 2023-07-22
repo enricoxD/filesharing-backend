@@ -1,7 +1,6 @@
 package de.enricoe.api.responses
 
 import de.enricoe.models.FileUpload
-import de.enricoe.models.Upload
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 
@@ -14,3 +13,13 @@ class UploadResponse(
     var files: Array<FileUpload>,
 )
 
+@Serializable
+class UploadListEntry(
+    val id: String,
+    val author: String,
+    val authorName: String,
+    val title: String,
+    val uploadedAt: LocalDateTime,
+    val size: Long,
+    val filesAmount: Int
+)

@@ -1,9 +1,13 @@
 package de.enricoe.models
 
 import de.enricoe.api.responses.UploadResponse
+import de.enricoe.api.responses.UploadListEntry
+import de.enricoe.database.MongoManager
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.litote.kmongo.eq
+import org.litote.kmongo.findOne
 
 @Serializable
 class Upload(
@@ -13,6 +17,7 @@ class Upload(
     val uploadedAt: LocalDateTime,
     var files: Array<FileUpload>,
     var deleteAt: LocalDateTime? = null,
+    val sharedWith: MutableList<String> = mutableListOf()
 ) {
     @SerialName("_id")
     val id = buildString {
@@ -26,6 +31,11 @@ class Upload(
     }
 
     fun asResponse() = UploadResponse(id, author, title, uploadedAt, files)
+
+    suspend fun asUploadListEntry(): UploadListEntry {
+        val authorName = MongoManager.users.findOne(User::id eq author)?.name!!
+        return UploadListEntry(id, author, authorName, title, uploadedAt, files.sumOf { it.size }, files.size)
+    }
 }
 
 @Serializable

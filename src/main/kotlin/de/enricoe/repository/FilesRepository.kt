@@ -183,6 +183,14 @@ object FilesRepository {
         return Response.Success(AuthorInformationResponse(authorUser.name, authorUser.lastSeen))
     }
 
+    suspend fun getUploads(author: String): Response<Any> {
+        return Response.Success(MongoManager.uploads.find(Upload::author eq author).map {
+            runBlocking {
+                it.asUploadListEntry()
+            }
+        }.toList())
+    }
+
     fun checkPermission(userId: String?, author: String, id: String, password: String?): Response<Any> {
         val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
                 ?: return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found")
