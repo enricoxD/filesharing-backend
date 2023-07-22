@@ -12,7 +12,7 @@ object Jwt {
     private lateinit var issuer: String
     lateinit var audience: String
     lateinit var realm: String
-    private val validityInMs = 36_000_00 * 24 // 24 hours
+    private val validityInMs = 36_000_00 * 24 * 30 // 24 hours * 30
     private lateinit var algorithm: Algorithm
     const val CLAIM = "id"
 
