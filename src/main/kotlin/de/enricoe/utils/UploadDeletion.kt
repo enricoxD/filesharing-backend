@@ -20,7 +20,7 @@ object UploadDeletion {
     fun init() {
         scope.launch {
             MongoManager.uploads.find(Upload::deleteAt gte getCurrentDate()).forEach { upload ->
-                deleteUpload(upload)
+                delete(upload)
             }
 
             while (true) {
@@ -32,7 +32,7 @@ object UploadDeletion {
                             val deleteAtOffset = ZoneOffset.from(upload.deleteAt.toJavaLocalDateTime())
                             val offsetDifference = deleteAtOffset.totalSeconds - currentOffset.totalSeconds
                             delay(offsetDifference.seconds)
-                            deleteUpload(upload)
+                            delete(upload)
                         }
                     }
                 }
@@ -41,11 +41,12 @@ object UploadDeletion {
         }
     }
 
-    private fun deleteUpload(upload: Upload) {
+    fun delete(upload: Upload) {
         MongoManager.uploads.deleteOne(Upload::id eq upload.id)
         upload.files.forEach { fileUpload ->
             val file = fileUpload.asFile()
-            file.delete()
+            if (file.exists())
+                file.delete()
         }
     }
 }
