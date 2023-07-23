@@ -8,6 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
+import java.io.File
 
 @Serializable
 class Upload(
@@ -16,7 +17,7 @@ class Upload(
     var password: String?,
     val uploadedAt: LocalDateTime,
     var files: Array<FileUpload>,
-    var deleteAt: LocalDateTime? = null,
+    var deleteAt: LocalDateTime,
     val sharedWith: MutableList<String> = mutableListOf()
 ) {
     @SerialName("_id")
@@ -40,7 +41,10 @@ class Upload(
 
 @Serializable
 class FileUpload(
+    @SerialName("_id") val id: String,
+    val author: String,
     val name: String,
-    val hash: String,
     val size: Long
-)
+) {
+    fun asFile() = File("/uploads/$author/$id")
+}

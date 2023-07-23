@@ -8,6 +8,7 @@ import de.enricoe.models.User
 import de.enricoe.security.Crypto
 import de.enricoe.utils.FileHasher
 import de.enricoe.utils.Response
+import de.enricoe.utils.getCurrentDate
 import io.ktor.http.*
 import io.ktor.http.content.*
 import kotlinx.coroutines.*
@@ -33,7 +34,8 @@ object FilesRepository {
         ONE_WEEK,
         TWO_WEEKS,
         ONE_MONTH,
-        THREE_MONTH;
+        THREE_MONTH,
+        NEVER;
 
         fun toTimestamp(uploadTime: LocalDateTime): LocalDateTime {
             return uploadTime.toInstant(TimeZone.currentSystemDefault()).plus(
@@ -43,13 +45,14 @@ object FilesRepository {
                     TWO_WEEKS -> 14.days
                     ONE_MONTH -> 30.days
                     THREE_MONTH -> 90.days
+                    NEVER -> (5 * 365).days
                 }
             ).toLocalDateTime(TimeZone.currentSystemDefault())
         }
     }
 
     suspend fun uploadFiles(userId: String, multiPartData: MultiPartData): Response<Any> {
-        val uploadTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val uploadTime = getCurrentDate()
         var title = ""
         var password = ""
         var deleteIn = DeleteIn.ONE_MONTH
@@ -65,7 +68,7 @@ object FilesRepository {
                         when (name) {
                             "title" -> title = value.trim()
                             "password" -> password = Crypto.hashPassword(value)
-                            //"deleteIn" -> deleteIn = DeleteIn.valueOf(value)
+                            "deleteIn" -> deleteIn = DeleteIn.valueOf(value)
                         }
                     }
 
@@ -76,9 +79,9 @@ object FilesRepository {
                         val byteArray = stream.readBytes()
                         stream.close()
 
-                        val hash = FileHasher.hash(ByteArrayInputStream(byteArray.clone()))
+                        val fileId = FileHasher.hashWithDate(ByteArrayInputStream(byteArray.clone()), getCurrentDate())
                         val directory = File("/uploads/$userId/").also { if (!it.exists()) it.mkdirs() }
-                        val targetFile = File(directory, hash)
+                        val targetFile = File(directory, fileId)
                         if (!targetFile.exists()) {
                             Files.copy(
                                 ByteArrayInputStream(byteArray.clone()),
@@ -87,12 +90,16 @@ object FilesRepository {
                             )
                         }
                         val size = targetFile.length()
-                        files.add(FileUpload(name, hash, size))
+                        files.add(FileUpload(fileId, userId, name, size))
                     }
 
                     else -> {}
                 }
                 part.dispose()
+            }
+
+            if (title.isBlank()) {
+                title = files.singleOrNull()?.name ?: "Upload"
             }
 
             val upload = Upload(userId, title, password.takeIf { it.trim().isNotBlank() }, uploadTime, files.toTypedArray(), deleteIn.toTimestamp(uploadTime))
@@ -119,11 +126,11 @@ object FilesRepository {
         if (permissionResult is Response.Success) {
             val upload = permissionResult.data as Upload
 
-            if (upload.files.none { it.hash == fileUpload.hash } ) {
+            if (upload.files.none { it.id == fileUpload.id } ) {
                 return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found (hash)")
             }
 
-            return Response.Success(File("/uploads/${author}/${fileUpload.hash}"))
+            return Response.Success(fileUpload.asFile())
         }
         return Response.Error()
     }
@@ -156,7 +163,7 @@ object FilesRepository {
                 val zipOutput = ZipOutputStream(outputStream)
 
                 for (fileUpload in upload.files) {
-                    val file = File("/uploads/$author/${fileUpload.hash}")
+                    val file = File("/uploads/$author/${fileUpload.id}")
                     val entry = ZipEntry(fileUpload.name)
                     zipOutput.putNextEntry(entry)
                     zipOutput.write(file.readBytes())
@@ -191,7 +198,7 @@ object FilesRepository {
         }.toList())
     }
 
-    fun checkPermission(userId: String?, author: String, id: String, password: String?): Response<Any> {
+    private fun checkPermission(userId: String?, author: String, id: String, password: String?): Response<Any> {
         val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
                 ?: return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found")
 

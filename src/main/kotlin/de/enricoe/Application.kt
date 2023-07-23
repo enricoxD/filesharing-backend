@@ -1,6 +1,5 @@
 package de.enricoe
 
-import com.auth0.jwt.exceptions.TokenExpiredException
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import de.enricoe.database.MongoManager
 import de.enricoe.routes.authRoutes
@@ -8,6 +7,7 @@ import de.enricoe.routes.filesRoutes
 import de.enricoe.routes.userRoutes
 import de.enricoe.security.Jwt
 import de.enricoe.security.configureSecurity
+import de.enricoe.utils.UploadDeletion
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -16,14 +16,13 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.forwardedheaders.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.pipeline.*
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
     MongoManager.init()
+    UploadDeletion.init()
     install(CORS) {
         allowCredentials = true
         allowSameOrigin = true
@@ -51,8 +50,7 @@ fun Application.module() {
                     val token = Jwt.verifier.verify("$headerPayload.$signature")
                     id = token.getClaim(Jwt.CLAIM).asString()
                     call.authentication.principal(UserIdPrincipal(id))
-                } catch (_: Exception) {}
-
+                } catch (_: Exception) { }
             }
         }
         authRoutes()

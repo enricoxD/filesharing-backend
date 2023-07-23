@@ -4,10 +4,8 @@ import de.enricoe.api.responses.ForeignUserResponse
 import de.enricoe.api.responses.UserResponse
 import de.enricoe.database.MongoManager
 import de.enricoe.security.Crypto
-import kotlinx.datetime.Clock
+import de.enricoe.utils.getCurrentDate
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.litote.kmongo.eq
@@ -32,7 +30,7 @@ data class User(
 
     companion object {
         suspend fun register(credentials: UserRegistrationCredentials): User {
-            val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+            val currentTime = getCurrentDate()
             val user = User(
                 id = getFreeId(),
                 credentials.username,

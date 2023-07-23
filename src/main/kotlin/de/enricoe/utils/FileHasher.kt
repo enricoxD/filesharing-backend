@@ -1,5 +1,6 @@
 package de.enricoe.utils
 
+import kotlinx.datetime.LocalDateTime
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
 
@@ -15,6 +16,20 @@ object FileHasher {
             hashBytes.forEach { byte ->
                 append(String.format("%02x", byte))
             }
+        }
+    }
+
+    fun hashWithDate(inputStream: ByteArrayInputStream, date: LocalDateTime): String {
+        val hash = hash(inputStream)
+
+        return buildString {
+            append(date.year)
+            append(date.monthNumber.toString().padStart(2, '0'))
+            append(date.dayOfMonth.toString().padStart(2, '0'))
+            val minutes = date.minute + date.hour * 60
+            val seconds = date.second + minutes * 60
+            append(seconds.toString().padStart(5, '0'))
+            append(hash)
         }
     }
 }
