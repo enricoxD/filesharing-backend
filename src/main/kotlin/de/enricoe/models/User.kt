@@ -12,7 +12,7 @@ import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 
 enum class Role {
-    ADMIN, STAFF, PREMIUM, NORMAL
+    ADMIN, PREMIUM, NORMAL
 }
 
 @Serializable
