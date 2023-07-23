@@ -56,6 +56,18 @@ fun Routing.filesRoutes() {
             }
         }
 
+        post("delete") {
+            val userId = call.principal<UserIdPrincipal>()?.name
+            val request = call.receive<GetUploadRequest>()
+            val result = FilesRepository.deleteUpload(userId, request.author, request.id)
+
+            if (result is Response.Error) {
+                call.respond(result.statusCode, result)
+            } else if (result is Response.Success) {
+                call.respond(result.statusCode)
+            }
+        }
+
         post("authorinformation") {
             val userId = call.principal<UserIdPrincipal>()?.name
             val request = call.receive<GetUploadRequest>()

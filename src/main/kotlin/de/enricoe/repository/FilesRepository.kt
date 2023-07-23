@@ -3,11 +3,13 @@ package de.enricoe.repository
 import de.enricoe.api.responses.AuthorInformationResponse
 import de.enricoe.database.MongoManager
 import de.enricoe.models.FileUpload
+import de.enricoe.models.Role
 import de.enricoe.models.Upload
 import de.enricoe.models.User
 import de.enricoe.security.Crypto
 import de.enricoe.utils.FileHasher
 import de.enricoe.utils.Response
+import de.enricoe.utils.UploadDeletion
 import de.enricoe.utils.getCurrentDate
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -177,6 +179,19 @@ object FilesRepository {
             return Response.Success(outputFile)
         }
         return Response.Error()
+    }
+
+    suspend fun deleteUpload(userId: String?, author: String, id: String): Response<Any> {
+        val upload = MongoManager.uploads.findOne(and(Upload::author eq author, Upload::id eq id))
+            ?: return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found")
+        val user = MongoManager.users.findOne(User::id eq userId)
+            ?: return Response.Error(HttpStatusCode.Unauthorized)
+
+        if (!(author == userId || user.role == Role.ADMIN)) {
+            return Response.Error(HttpStatusCode.Unauthorized)
+        }
+        UploadDeletion.delete(upload)
+        return Response.Success()
     }
 
     suspend fun requestAuthorInformation(userId: String?, author: String, id: String, password: String?): Response<Any> {
