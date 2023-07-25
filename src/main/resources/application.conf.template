@@ -13,8 +13,3 @@ jwt {
   audience = "http://0.0.0.0:8080/hello"
   realm = "Access to 'hello'"
 }
-
-session {
-  encryptKey = "encryptKey"
-  signKey = "signKey"
-}
