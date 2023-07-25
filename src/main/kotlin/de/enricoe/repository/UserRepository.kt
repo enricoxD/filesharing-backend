@@ -6,11 +6,13 @@ import de.enricoe.models.User
 import de.enricoe.models.UserRegistrationCredentials
 import de.enricoe.security.Crypto
 import de.enricoe.security.Jwt
+import de.enricoe.security.UserSession
 import de.enricoe.utils.Response
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.sessions.*
 import org.litote.kmongo.eq
 import org.litote.kmongo.setTo
 import org.litote.kmongo.updateOne
@@ -31,6 +33,7 @@ object UserRepository {
         }*/
         val user = User.register(credentials)
         Jwt.appendCookies(call, Jwt.makeToken(user.id))
+        call.sessions.set(UserSession(user.asResponse()))
         return Response.Success(data = user, "Successfully created user '${credentials.username}'")
     }
 
@@ -39,11 +42,12 @@ object UserRepository {
         val cryptoResult = Crypto.verifyPassword(credentials.password, user.password)
         if (!cryptoResult.verified) return Response.Error(exception = "Username or Password does not exist")
         Jwt.appendCookies(call, Jwt.makeToken(user.id))
+        call.sessions.set(UserSession(user.asResponse()))
         return Response.Success(data = user, "Successfully logged in")
     }
 
     val allowedAvatarFileExtensions = setOf("png", "jpg", "jpeg", "webp")
-    suspend fun updateUser(userId: String, multiPartData: MultiPartData): Response<Any> {
+    suspend fun updateUser(call: ApplicationCall, userId: String, multiPartData: MultiPartData): Response<Any> {
         val user = User.getById(userId) ?: run {
             return Response.Error(HttpStatusCode.BadRequest, exception = "The requesting User doesn't exist?")
         }
@@ -85,6 +89,7 @@ object UserRepository {
                 else -> {}
             }
             part.dispose()
+            call.sessions.set(UserSession(user.asResponse()))
         }
 
         if (updateData.email != null && isEmailInUse(updateData.email!!)) {

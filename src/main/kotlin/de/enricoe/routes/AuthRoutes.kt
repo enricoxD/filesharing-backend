@@ -20,7 +20,6 @@ fun Routing.authRoutes() {
             val credentials = call.receive<UserRegistrationCredentials>()
             val result = UserRepository.register(call, credentials)
             if (result is Response.Success && result.data is User) {
-                //call.sessions.set(UserSession(result.data))
                 call.respond(result.statusCode, result.data)
                 return@post
             }
@@ -35,7 +34,6 @@ fun Routing.authRoutes() {
             val credentials = call.receive<UserPasswordCredential>()
             val result = UserRepository.login(call, credentials)
             if (result is Response.Success && result.data is User) {
-                //call.sessions.set(UserSession(result.data))
                 call.respond(result.statusCode, result.data)
                 return@post
             }
@@ -47,7 +45,7 @@ fun Routing.authRoutes() {
         }
 
         get("logout") {
-            call.sessions.clear("session")
+            call.sessions.clear("user_session")
             call.response.cookies.append(Cookie("headerPayload", "", maxAge = 0, secure = true, httpOnly = false, path = "/"))
             call.response.cookies.append(Cookie("signature", "", maxAge = 0, secure = true, httpOnly = false, path = "/"))
             call.respond(HttpStatusCode.OK)

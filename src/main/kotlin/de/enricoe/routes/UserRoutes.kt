@@ -21,7 +21,7 @@ fun Routing.userRoutes() {
                     call.respond(error.statusCode, error)
                     return@post
                 }
-                val result = UserRepository.updateUser(userId, call.receiveMultipart())
+                val result = UserRepository.updateUser(call, userId, call.receiveMultipart())
                 call.respond(result.statusCode, result)
             }
         }
