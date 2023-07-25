@@ -44,11 +44,10 @@ fun Application.module() {
         intercept(ApplicationCallPipeline.Setup) {
             val headerPayload = call.request.cookies["headerPayload"]
             val signature = call.request.cookies["signature"]
-            var id = ""
             if (headerPayload != null && signature != null) {
                 try {
                     val token = Jwt.verifier.verify("$headerPayload.$signature")
-                    id = token.getClaim(Jwt.CLAIM).asString()
+                    val id = token.getClaim(Jwt.CLAIM).asString()
                     call.authentication.principal(UserIdPrincipal(id))
                 } catch (_: Exception) { }
             }
