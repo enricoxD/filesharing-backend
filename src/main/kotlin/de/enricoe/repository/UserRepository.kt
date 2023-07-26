@@ -26,11 +26,10 @@ object UserRepository {
     suspend fun register(call: ApplicationCall, credentials: UserRegistrationCredentials): Response<Any> {
         if (isEmailInUse(credentials.email)) return Response.Error(exception = "Email already in use")
         if (isUsernameInUse(credentials.username)) return Response.Error(exception = "Username already in use")
-        /* TODO
         val passwordValidation = Crypto.validatePassword(credentials.password)
         if (!passwordValidation.isValid) {
-            return Response.Error(exception = passwordValidation, message = "Password missmatch")
-        }*/
+            return Response.Error(exception = passwordValidation.exception)
+        }
         val user = User.register(credentials)
         Jwt.appendCookies(call, Jwt.makeToken(user.id))
         call.sessions.set(UserSession(user.asResponse()))
@@ -97,6 +96,12 @@ object UserRepository {
         }
         if (updateData.name != null && isUsernameInUse(updateData.name!!)) {
             return Response.Error(HttpStatusCode.Conflict, exception = "Username already in use")
+        }
+        if (updateData.newPassword != null) {
+            val passwordValidation = Crypto.validatePassword(updateData.newPassword!!)
+            if (!passwordValidation.isValid) {
+                return Response.Error(exception = passwordValidation.exception)
+            }
         }
 
         if (updateData.currentPassword == null || !Crypto.verifyPassword(updateData.currentPassword!!, user.password).verified) {
