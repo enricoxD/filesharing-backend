@@ -44,7 +44,8 @@ class FileUpload(
     @SerialName("_id") val id: String,
     val author: String,
     val name: String,
-    val size: Long
+    val size: Long,
+    var downloads: Int = 0
 ) {
     fun asFile() = File("/uploads/$author/$id")
 }

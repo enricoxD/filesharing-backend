@@ -14,7 +14,10 @@ import de.enricoe.utils.getCurrentDate
 import io.ktor.http.*
 import io.ktor.http.content.*
 import kotlinx.coroutines.*
-import kotlinx.datetime.*
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.litote.kmongo.and
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
@@ -29,7 +32,8 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 object FilesRepository {
-    val deleteZipJobs = hashMapOf<String, Job>()
+    private val deleteZipJobs = hashMapOf<String, Job>()
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     enum class DeleteIn {
         ONE_DAY,
@@ -129,9 +133,11 @@ object FilesRepository {
             val upload = permissionResult.data as Upload
 
             if (upload.files.none { it.id == fileUpload.id } ) {
-                return Response.Error(HttpStatusCode.NotFound, "Requested Upload not found (hash)")
+                return Response.Error(HttpStatusCode.NotFound, "Requested file not found (id)")
             }
-
+            scope.launch {
+                incrementDownloads(upload, fileUpload)
+            }
             return Response.Success(fileUpload.asFile())
         }
         return Response.Error()
@@ -147,7 +153,7 @@ object FilesRepository {
             deleteZipJobs[path]?.cancel()
 
             val outputFile = File(path)
-            deleteZipJobs[path] = CoroutineScope(Dispatchers.IO).launch {
+            deleteZipJobs[path] = scope.launch {
                 delay(15.minutes)
                 if (outputFile.exists()) {
                     outputFile.parentFile.deleteRecursively()
@@ -165,6 +171,9 @@ object FilesRepository {
                 val zipOutput = ZipOutputStream(outputStream)
 
                 for (fileUpload in upload.files) {
+                    scope.launch {
+                        incrementDownloads(upload, fileUpload)
+                    }
                     val file = File("/uploads/$author/${fileUpload.id}")
                     val entry = ZipEntry(fileUpload.name)
                     zipOutput.putNextEntry(entry)
@@ -211,6 +220,12 @@ object FilesRepository {
                 it.asUploadListEntry()
             }
         }.toList())
+    }
+
+    private suspend fun incrementDownloads(upload: Upload, fileUpload: FileUpload) {
+        val file = upload.files.find { it.id == fileUpload.id } ?: return
+        file.downloads += 1
+        MongoManager.uploads.replaceOne(Upload::id eq upload.id, upload)
     }
 
     private fun checkPermission(userId: String?, author: String, id: String, password: String?): Response<Any> {

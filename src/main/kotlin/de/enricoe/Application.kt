@@ -2,6 +2,7 @@ package de.enricoe
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import de.enricoe.database.MongoManager
+import de.enricoe.routes.analyticsRoutes
 import de.enricoe.routes.authRoutes
 import de.enricoe.routes.filesRoutes
 import de.enricoe.routes.userRoutes
@@ -55,5 +56,6 @@ fun Application.module() {
         authRoutes()
         userRoutes()
         filesRoutes()
+        analyticsRoutes()
     }
 }
